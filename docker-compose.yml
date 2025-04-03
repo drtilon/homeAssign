@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+  nginx:
+    build: ./nginx-reverse-proxy
+    container_name: nginx-reverse-proxy
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - geo_network
+    volumes:
+      - ./nginx-logs:/var/log/nginx
+    sysctls:
+      - net.ipv4.tcp_syncookies=1
+      - net.ipv4.tcp_max_syn_backlog=2048
+      - net.ipv4.tcp_synack_retries=2
+      - net.ipv4.tcp_syn_retries=2
+      - net.ipv4.tcp_fin_timeout=15
+
+  api:
+    build: geoBackend
+    depends_on:
+      - db
+    environment:
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://geouser:geopassword@db/geolocation
+      - DB_HOST=db
+      - DB_USER=geouser
+      - DB_PASSWORD=geopassword
+      - DB_NAME=geolocation
+    volumes:
+      - ./logs:/app/logs
+      - ./geoBackend:/app
+    restart: always
+    networks:
+      - geo_network
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: geolocation
+      MYSQL_USER: geouser
+      MYSQL_PASSWORD: geopassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    networks:
+      - geo_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "geouser", "-pgeopassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+
+networks:
+  geo_network:
+    driver: bridge
