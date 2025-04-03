@@ -62,9 +62,3 @@ Available attacks:
 
 Username: admin
 Password: admin123
-
-## Notes
-
-- The nginx reverse proxy is configured to block common attack patterns
-- All services are containerized for easy deployment
-- The app stores geolocation data in MySQL
